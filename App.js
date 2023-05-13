@@ -10,25 +10,27 @@ import moment from 'moment';
 export default function App() {
   const [date, setDate] = useState(new Date(1598051730000));
   const [isMotorOn, setIsMotorOn] = useState(false);
+  const [autoWatter, setAutoWatter] = useState(false);
   const [soilMoisture, setSoilMoisture] = useState(0);
   const [haveSchedule, setHaveSchedule] = useState("null");
   const [dateSchedule, setDateSchedule] = useState(null);
   const [show, setShow] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  const [historyLogs, setHistoryLogs] = useState([]);
-  const [saveHistory, setSaveHistory] = useState(null);
+  const [saveHistory, setSaveHistory] = useState([]);
 
 
   const toggleMotor = () => {
     setIsMotorOn(!isMotorOn);
     const db = getDatabase();
-    set(ref(db, 'Data/'), {
-      relay_status: !isMotorOn,
-      soil_moisture: soilMoisture,
-      relay_on_time: haveSchedule,
-      soil_moisture_samples: saveHistory,
-    });
+    set(ref(db, 'Data/relay_status'), !isMotorOn);
     isMotorOn ? showAlert("Đã tắt máy") : showAlert("Đã bật máy");
+  };
+
+  const toggleAuto = () => {
+    setAutoWatter(!autoWatter);
+    const db = getDatabase();
+    set(ref(db, 'Data/auto_watering'), !autoWatter);
+    isMotorOn ? showAlert("Đã tắt chế độ tưới tự động") : showAlert("Đã bật chế độ tưới tự động");
   };
 
   const handleSchedule = () => {
@@ -43,12 +45,7 @@ export default function App() {
 
   const setTimeSchedule = () => {
     const db = getDatabase();
-    set(ref(db, 'Data/'), {
-      relay_status: isMotorOn,
-      soil_moisture: soilMoisture,
-      relay_on_time: dateSchedule,
-      soil_moisture_samples: saveHistory,
-    });
+    set(ref(db, 'Data/relay_on_time'), dateSchedule);
     showAlert("Đặt lịch thành công!");
     setShow(false);
   }
@@ -67,16 +64,7 @@ export default function App() {
       setSoilMoisture(data?.soil_moisture);
       setHaveSchedule(data?.relay_on_time);
       setSaveHistory(data?.soil_moisture_samples);
-      const newArr = Object.values(data?.soil_moisture_samples);
-      if (newArr.length > 5) {
-        const count = newArr.length;
-        const newSlice = newArr.slice(count - 5, count);
-        const newMap = newSlice.map(item => parseInt(item))
-        setHistoryLogs(newMap);
-      } else {
-        const newMap = newArr.map(item => parseInt(item))
-        setHistoryLogs(newMap);
-      }
+      setAutoWatter(data?.auto_watering);
     });
   }
 
@@ -109,7 +97,7 @@ export default function App() {
               labels: ['now', '1 phút', '2 phút', '3 phút', '4 phút'],
               datasets: [
                 {
-                  data: historyLogs,
+                  data: saveHistory || [],
                 },
               ],
             }}
@@ -134,14 +122,29 @@ export default function App() {
         </View>
         <View style={styles.settingsContainer}>
           <Text style={styles.label}>Độ ẩm đất: {soilMoisture}%</Text>
-          <Text style={styles.label}>Motor:</Text>
-          <Switch
-            trackColor={{ false: '#767577', true: '#81b0ff' }}
-            thumbColor={isMotorOn ? '#f5dd4b' : '#f4f3f4'}
-            ios_backgroundColor="#3e3e3e"
-            onValueChange={toggleMotor}
-            value={isMotorOn}
-          />
+          <View style={styles.actionHandle}>
+            <View style={styles.childAction}>
+              <Text style={styles.label}>Bật/tắt thủ công:</Text>
+              <Switch
+                trackColor={{ false: '#767577', true: '#81b0ff' }}
+                thumbColor={isMotorOn ? '#f5dd4b' : '#f4f3f4'}
+                ios_backgroundColor="#3e3e3e"
+                onValueChange={toggleMotor}
+                value={isMotorOn}
+              />
+            </View>
+            <View style={styles.childAction}>
+              <Text style={styles.label}>Bật/tắt tự động:</Text>
+              <Switch
+                trackColor={{ false: '#767577', true: '#81b0ff' }}
+                thumbColor={autoWatter ? '#f5dd4b' : '#f4f3f4'}
+                ios_backgroundColor="#3e3e3e"
+                onValueChange={toggleAuto}
+                value={autoWatter}
+              />
+            </View>
+          </View>
+
           <Text style={{ ...styles.label, marginTop: 50 }}>{haveSchedule != "null" ? `Bật máy bơm lúc:${haveSchedule}` : 'Không có lịch bật máy'}</Text>
         </View></>
         :
@@ -225,7 +228,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 18,
-    marginTop: 16,
+    marginTop: 8,
+    marginBottom: 10,
     fontWeight: 'bold',
     textAlign: 'center',
   },
@@ -311,4 +315,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 350,
   },
+  actionHandle: {
+    display: 'flex',
+    width: '100%',
+    flexDirection: 'row'
+  },
+  childAction: {
+    flex: 1,
+    alignItems: 'center'
+  }
 });
