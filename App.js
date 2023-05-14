@@ -8,7 +8,7 @@ import { getDatabase, ref, set, onValue } from "firebase/database";
 import moment from 'moment';
 
 export default function App() {
-  const [date, setDate] = useState(new Date(1598051730000));
+  const [date, setDate] = useState(new Date());
   const [isMotorOn, setIsMotorOn] = useState(false);
   const [autoWatter, setAutoWatter] = useState(false);
   const [soilMoisture, setSoilMoisture] = useState(0);
@@ -16,7 +16,7 @@ export default function App() {
   const [dateSchedule, setDateSchedule] = useState(null);
   const [show, setShow] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  const [saveHistory, setSaveHistory] = useState([]);
+  const [saveHistory, setSaveHistory] = useState([0,0,0,0,0]);
 
 
   const toggleMotor = () => {
